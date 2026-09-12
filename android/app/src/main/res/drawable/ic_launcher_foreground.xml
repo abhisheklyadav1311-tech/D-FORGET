@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Checkmark/task icon in white -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M44.5,62.3L36.2,54.0C35.4,53.2 34.1,53.2 33.3,54.0C32.5,54.8 32.5,56.1 33.3,56.9L43.0,66.6C43.8,67.4 45.1,67.4 45.9,66.6L74.7,37.8C75.5,37.0 75.5,35.7 74.7,34.9C73.9,34.1 72.6,34.1 71.8,34.9L44.5,62.3Z" />
+    <!-- Sparkle/AI indicator -->
+    <path
+        android:fillColor="#C5CAE9"
+        android:pathData="M70,68L72,63L74,68L79,70L74,72L72,77L70,72L65,70Z" />
+</vector>
