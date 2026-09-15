@@ -1,6 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+from app.routes import tasks, sources
+from app.database import models
+from app.database.connection import engine
+
+# Create database tables
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -16,6 +22,9 @@ if settings.ALLOWED_ORIGINS:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+app.include_router(tasks.router, prefix=settings.API_V1_STR)
+app.include_router(sources.router, prefix=settings.API_V1_STR)
 
 @app.get("/health", tags=["health"])
 def health_check():
