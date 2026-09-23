@@ -42,7 +42,8 @@ and
 
 **"I know exactly what I need to do and when."**
 
----
+--- 
+
 
 ## 🚀 Features
 

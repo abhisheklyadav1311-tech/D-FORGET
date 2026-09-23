@@ -123,7 +123,11 @@ fun AppNavHost(
         }
 
         composable(Screen.Completed.route) {
+            val completedViewModel: com.aitaskorganizer.app.ui.completed.viewmodel.CompletedViewModel = viewModel(
+                factory = com.aitaskorganizer.app.ui.completed.viewmodel.CompletedViewModelFactory(repository)
+            )
             CompletedScreen(
+                viewModel = completedViewModel,
                 onNavigateToTaskDetail = { taskId ->
                     navController.navigate(Screen.TaskDetail.createRoute(taskId))
                 }
