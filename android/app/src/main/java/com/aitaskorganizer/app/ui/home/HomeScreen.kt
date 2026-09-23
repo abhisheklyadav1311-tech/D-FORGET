@@ -3,6 +3,7 @@ package com.aitaskorganizer.app.ui.home
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,62 +22,69 @@ import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Warning
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.aitaskorganizer.app.data.mock.MockData
 import com.aitaskorganizer.app.data.model.TaskUiModel
+import com.aitaskorganizer.app.ui.components.BrutalBox
 import com.aitaskorganizer.app.ui.components.MetricCard
 import com.aitaskorganizer.app.ui.components.TaskCard
+import com.aitaskorganizer.app.ui.home.viewmodel.HomeViewModel
 import com.aitaskorganizer.app.ui.theme.AITaskOrganizerTheme
 import com.aitaskorganizer.app.ui.theme.AppDimens
 import java.time.LocalTime
 
-/**
- * Home Dashboard screen.
- *
- * Answers: "What do I need to do today?"
- *
- * Sections:
- * 1. Greeting
- * 2. Metric cards (Today / Upcoming / Overdue)
- * 3. AI Inbox card (prominent, violet-themed)
- * 4. Today's tasks
- */
 @Composable
 fun HomeScreen(
+    viewModel: HomeViewModel? = null,
     onNavigateToTaskDetail: (Long) -> Unit = {},
     onNavigateToAddTask: () -> Unit = {},
     onNavigateToAIInbox: () -> Unit = {}
 ) {
-    // Mock data — will be replaced by ViewModel in Phase 12
-    val todayTasks = MockData.todayTasks
-    val upcomingCount = MockData.upcomingTasks.size
-    val overdueCount = MockData.overdueTasks.size
-    val aiInboxCount = MockData.aiInboxCount
+    val todayTasks by (viewModel?.todayTasks ?: kotlinx.coroutines.flow.MutableStateFlow(emptyList<TaskUiModel>())).collectAsState()
+    val overdueTasks by (viewModel?.overdueTasks ?: kotlinx.coroutines.flow.MutableStateFlow(emptyList<TaskUiModel>())).collectAsState()
+    val upcomingCount by (viewModel?.upcomingCount ?: kotlinx.coroutines.flow.MutableStateFlow(0)).collectAsState()
+    val overdueCount by (viewModel?.overdueCount ?: kotlinx.coroutines.flow.MutableStateFlow(0)).collectAsState()
+    val todayCount by (viewModel?.todayCount ?: kotlinx.coroutines.flow.MutableStateFlow(0)).collectAsState()
+    val aiInboxCount by (viewModel?.aiInboxCount ?: kotlinx.coroutines.flow.MutableStateFlow(0)).collectAsState()
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToAddTask,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = RoundedCornerShape(AppDimens.CornerRadiusMedium)
+            BrutalBox(
+                backgroundColor = MaterialTheme.colorScheme.primary,
+                cornerRadius = AppDimens.CornerRadiusMedium,
+                onClick = onNavigateToAddTask
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "Add new task"
-                )
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Add new task",
+                        tint = Color(0xFF1A1A1A)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "NEW TASK",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF1A1A1A)
+                    )
+                }
             }
         }
     ) { innerPadding ->
@@ -84,29 +92,26 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            contentPadding = PaddingValues(
                 start = AppDimens.ScreenHorizontalPadding,
                 end = AppDimens.ScreenHorizontalPadding,
                 top = AppDimens.ScreenTopPadding,
-                bottom = 80.dp // Space for FAB
+                bottom = 100.dp
             ),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.CardSpacing)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // ── Greeting ───────────────────────────────────
             item {
                 GreetingSection()
             }
 
-            // ── Metric Cards ───────────────────────────────
             item {
                 MetricCardsRow(
-                    todayCount = todayTasks.size,
+                    todayCount = todayCount,
                     upcomingCount = upcomingCount,
                     overdueCount = overdueCount
                 )
             }
 
-            // ── AI Inbox Card ──────────────────────────────
             item {
                 AIInboxCard(
                     pendingCount = aiInboxCount,
@@ -114,16 +119,14 @@ fun HomeScreen(
                 )
             }
 
-            // ── Today's Tasks Header ───────────────────────
             item {
                 Spacer(modifier = Modifier.height(4.dp))
                 SectionHeader(
-                    title = "Today",
-                    count = todayTasks.size
+                    title = "TODAY",
+                    count = todayCount
                 )
             }
 
-            // ── Task Cards ─────────────────────────────────
             if (todayTasks.isEmpty()) {
                 item {
                     EmptyTodayCard()
@@ -136,66 +139,58 @@ fun HomeScreen(
                     TaskCard(
                         task = task,
                         onTaskClick = onNavigateToTaskDetail,
-                        onToggleComplete = { /* Phase 12 */ }
+                        onToggleComplete = { id -> viewModel?.toggleTaskCompletion(id) }
                     )
                 }
             }
 
-            // ── Overdue Section (if any) ───────────────────
             if (overdueCount > 0) {
                 item {
                     Spacer(modifier = Modifier.height(8.dp))
                     SectionHeader(
-                        title = "Overdue",
+                        title = "OVERDUE",
                         count = overdueCount
                     )
                 }
 
                 items(
-                    items = MockData.overdueTasks,
+                    items = overdueTasks,
                     key = { it.id }
                 ) { task ->
                     TaskCard(
                         task = task,
                         onTaskClick = onNavigateToTaskDetail,
-                        onToggleComplete = { /* Phase 12 */ }
+                        onToggleComplete = { id -> viewModel?.toggleTaskCompletion(id) }
                     )
                 }
             }
-
-            // Bottom spacer
-            item { Spacer(modifier = Modifier.height(16.dp)) }
         }
     }
 }
-
-// ─────────────────────────────────────────────────────────────
-// Private Composables
-// ─────────────────────────────────────────────────────────────
 
 @Composable
 private fun GreetingSection() {
     val hour = LocalTime.now().hour
     val greeting = when {
-        hour < 12 -> "Good morning"
-        hour < 17 -> "Good afternoon"
-        else -> "Good evening"
+        hour < 12 -> "GOOD MORNING"
+        hour < 17 -> "GOOD AFTERNOON"
+        else -> "GOOD EVENING"
     }
 
     Column {
         Text(
             text = "$greeting 👋",
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
+            style = MaterialTheme.typography.displayMedium,
+            fontWeight = FontWeight.ExtraBold,
+            color = Color(0xFF1A1A1A)
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Here's what's on your plate today.",
+            text = "HERE'S WHAT'S ON YOUR PLATE TODAY.",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1A1A1A)
         )
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
@@ -227,7 +222,7 @@ private fun MetricCardsRow(
             count = overdueCount,
             label = "Overdue",
             icon = Icons.Outlined.Warning,
-            accentColor = MaterialTheme.colorScheme.error,
+            accentColor = MaterialTheme.colorScheme.secondary,
             modifier = Modifier.weight(1f)
         )
     }
@@ -238,50 +233,47 @@ private fun AIInboxCard(
     pendingCount: Int,
     onClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(AppDimens.CardCornerRadius),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    BrutalBox(
+        backgroundColor = MaterialTheme.colorScheme.secondary,
+        cornerRadius = AppDimens.CornerRadiusSmall,
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(AppDimens.CardContentPadding),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.Outlined.AutoAwesome,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
+                tint = Color.White,
                 modifier = Modifier.size(28.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "AI Inbox",
+                    text = "AI INBOX",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White
                 )
                 Text(
                     text = if (pendingCount > 0) {
-                        "$pendingCount items ready to analyze"
+                        "$pendingCount ITEMS READY TO ANALYZE"
                     } else {
-                        "Drop anything here. I'll organize it."
+                        "DROP ANYTHING HERE. I'LL ORGANIZE IT."
                     },
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.9f)
                 )
             }
             Icon(
                 imageVector = Icons.Outlined.ChevronRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
+                tint = Color.White,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -303,31 +295,29 @@ private fun SectionHeader(
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onBackground
+            fontWeight = FontWeight.ExtraBold,
+            color = Color(0xFF1A1A1A)
         )
         Text(
-            text = "$count tasks",
+            text = "$count TASKS",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            fontWeight = FontWeight.ExtraBold,
+            color = Color(0xFF1A1A1A)
         )
     }
 }
 
 @Composable
 private fun EmptyTodayCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppDimens.CardCornerRadius),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = AppDimens.CardElevation)
+    BrutalBox(
+        backgroundColor = Color.White,
+        cornerRadius = AppDimens.CornerRadiusSmall,
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(AppDimens.PaddingLarge),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -336,16 +326,17 @@ private fun EmptyTodayCard() {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "All clear for today!",
+                text = "ALL CLEAR FOR TODAY!",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF1A1A1A)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "No tasks due today. Enjoy your free time or add something new.",
+                text = "NO TASKS DUE TODAY. ENJOY YOUR FREE TIME OR ADD SOMETHING NEW.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1A1A1A)
             )
         }
     }

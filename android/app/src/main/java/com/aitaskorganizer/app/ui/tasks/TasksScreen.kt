@@ -5,7 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,8 +25,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +35,7 @@ import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -46,30 +45,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.aitaskorganizer.app.data.mock.MockData
-import com.aitaskorganizer.app.data.model.TaskStatus
 import com.aitaskorganizer.app.data.model.TaskUiModel
+import com.aitaskorganizer.app.ui.components.BrutalBox
 import com.aitaskorganizer.app.ui.components.TaskCard
+import com.aitaskorganizer.app.ui.tasks.viewmodel.TasksViewModel
 import com.aitaskorganizer.app.ui.theme.AITaskOrganizerTheme
 import com.aitaskorganizer.app.ui.theme.AppDimens
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-/**
- * Tasks screen with tab filtering and search.
- *
- * Sections:
- * 1. Screen title
- * 2. Search bar + filter button
- * 3. Segmented tabs (All / Today / Upcoming / Overdue)
- * 4. Filtered task list with date grouping
- * 5. FAB for new task
- */
 @Composable
 fun TasksScreen(
+    viewModel: TasksViewModel? = null,
     onNavigateToTaskDetail: (Long) -> Unit = {},
     onNavigateToAddTask: () -> Unit = {}
 ) {
@@ -77,45 +68,60 @@ fun TasksScreen(
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val tabs = TaskTab.entries
 
-    // Filter tasks based on selected tab and search query
-    val filteredTasks = remember(selectedTabIndex, searchQuery) {
-        val pendingTasks = MockData.pendingTasks
-        val tabFiltered = when (tabs[selectedTabIndex]) {
-            TaskTab.ALL -> pendingTasks
-            TaskTab.TODAY -> MockData.todayTasks
-            TaskTab.UPCOMING -> MockData.upcomingTasks
-            TaskTab.OVERDUE -> MockData.overdueTasks
-        }
+    // Collect from ViewModel (or empty for preview)
+    val allPending by (viewModel?.allPending ?: kotlinx.coroutines.flow.MutableStateFlow(emptyList<TaskUiModel>())).collectAsState()
+    val todayTasksState by (viewModel?.todayTasks ?: kotlinx.coroutines.flow.MutableStateFlow(emptyList<TaskUiModel>())).collectAsState()
+    val upcomingTasksState by (viewModel?.upcomingTasks ?: kotlinx.coroutines.flow.MutableStateFlow(emptyList<TaskUiModel>())).collectAsState()
+    val overdueTasksState by (viewModel?.overdueTasks ?: kotlinx.coroutines.flow.MutableStateFlow(emptyList<TaskUiModel>())).collectAsState()
 
-        if (searchQuery.isBlank()) {
-            tabFiltered
-        } else {
-            tabFiltered.filter { task ->
-                task.title.contains(searchQuery, ignoreCase = true) ||
-                    task.description.contains(searchQuery, ignoreCase = true) ||
-                    task.subject.contains(searchQuery, ignoreCase = true) ||
-                    task.category.contains(searchQuery, ignoreCase = true)
-            }
+    val tabFiltered = when (tabs[selectedTabIndex]) {
+        TaskTab.ALL -> allPending
+        TaskTab.TODAY -> todayTasksState
+        TaskTab.UPCOMING -> upcomingTasksState
+        TaskTab.OVERDUE -> overdueTasksState
+    }
+
+    val filteredTasks = if (searchQuery.isBlank()) {
+        tabFiltered
+    } else {
+        tabFiltered.filter { task ->
+            task.title.contains(searchQuery, ignoreCase = true) ||
+                task.description.contains(searchQuery, ignoreCase = true) ||
+                task.subject.contains(searchQuery, ignoreCase = true) ||
+                task.category.contains(searchQuery, ignoreCase = true)
         }
     }
 
-    // Group tasks by date for display
     val groupedTasks = remember(filteredTasks) {
         groupTasksByDate(filteredTasks)
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToAddTask,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = RoundedCornerShape(AppDimens.CornerRadiusMedium)
+            BrutalBox(
+                backgroundColor = MaterialTheme.colorScheme.primary,
+                cornerRadius = AppDimens.CornerRadiusMedium,
+                onClick = onNavigateToAddTask
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "Add new task"
-                )
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Add new task",
+                        tint = Color(0xFF1A1A1A)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "NEW TASK",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF1A1A1A)
+                    )
+                }
             }
         }
     ) { innerPadding ->
@@ -124,7 +130,6 @@ fun TasksScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // ── Header ─────────────────────────────────────
             Column(
                 modifier = Modifier.padding(
                     start = AppDimens.ScreenHorizontalPadding,
@@ -133,23 +138,21 @@ fun TasksScreen(
                 )
             ) {
                 Text(
-                    text = "Tasks",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    text = "TASKS",
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF1A1A1A)
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // ── Search Bar ─────────────────────────────
                 SearchBar(
                     query = searchQuery,
                     onQueryChange = { searchQuery = it }
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Tab Row ────────────────────────────────────
             TaskTabRow(
                 tabs = tabs,
                 selectedIndex = selectedTabIndex,
@@ -164,11 +167,11 @@ fun TasksScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ── Task List ──────────────────────────────────
             AnimatedContent(
                 targetState = selectedTabIndex,
                 transitionSpec = { fadeIn() togetherWith fadeOut() },
-                label = "tab_content"
+                label = "tab_content",
+                modifier = Modifier.weight(1f)
             ) { _ ->
                 if (filteredTasks.isEmpty()) {
                     EmptyTasksState(tab = tabs[selectedTabIndex], hasSearch = searchQuery.isNotBlank())
@@ -176,17 +179,13 @@ fun TasksScreen(
                     TaskList(
                         groupedTasks = groupedTasks,
                         onTaskClick = onNavigateToTaskDetail,
-                        onToggleComplete = { /* Phase 12 */ }
+                        onToggleComplete = { }
                     )
                 }
             }
         }
     }
 }
-
-// ─────────────────────────────────────────────────────────────
-// Private Composables
-// ─────────────────────────────────────────────────────────────
 
 @Composable
 private fun SearchBar(
@@ -198,37 +197,41 @@ private fun SearchBar(
         onValueChange = onQueryChange,
         placeholder = {
             Text(
-                text = "Search tasks...",
-                style = MaterialTheme.typography.bodyMedium
+                text = "SEARCH TASKS...",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1A1A1A).copy(alpha = 0.6f)
             )
         },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Outlined.Search,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = Color(0xFF1A1A1A),
                 modifier = Modifier.size(20.dp)
             )
         },
         trailingIcon = {
-            IconButton(onClick = { /* Phase 10: Filter dialog */ }) {
+            IconButton(onClick = { }) {
                 Icon(
                     imageVector = Icons.Outlined.FilterList,
                     contentDescription = "Filters",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = Color(0xFF1A1A1A),
                     modifier = Modifier.size(20.dp)
                 )
             }
         },
         singleLine = true,
-        shape = RoundedCornerShape(AppDimens.CornerRadiusMedium),
+        shape = RoundedCornerShape(AppDimens.CornerRadiusSmall),
         colors = OutlinedTextFieldDefaults.colors(
-            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            focusedContainerColor = MaterialTheme.colorScheme.surface,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            focusedBorderColor = MaterialTheme.colorScheme.primary
+            unfocusedContainerColor = Color.White,
+            focusedContainerColor = Color.White,
+            unfocusedBorderColor = Color(0xFF1A1A1A),
+            focusedBorderColor = Color(0xFF1A1A1A)
         ),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(width = 1.dp, color = Color(0xFF1A1A1A), shape = RoundedCornerShape(AppDimens.CornerRadiusSmall))
     )
 }
 
@@ -242,7 +245,7 @@ private fun TaskTabRow(
     ScrollableTabRow(
         selectedTabIndex = selectedIndex,
         containerColor = MaterialTheme.colorScheme.background,
-        contentColor = MaterialTheme.colorScheme.primary,
+        contentColor = Color(0xFF1A1A1A),
         edgePadding = AppDimens.ScreenHorizontalPadding,
         divider = {},
         indicator = {}
@@ -254,43 +257,45 @@ private fun TaskTabRow(
             Tab(
                 selected = isSelected,
                 onClick = { onTabSelected(index) },
-                modifier = Modifier.padding(horizontal = 2.dp)
+                modifier = Modifier.padding(horizontal = 4.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(AppDimens.CornerRadiusFull))
                         .background(
-                            if (isSelected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.surfaceContainerHigh
+                            if (isSelected) MaterialTheme.colorScheme.primary else Color.White,
+                            shape = RoundedCornerShape(AppDimens.CornerRadiusSmall)
                         )
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .border(
+                            width = AppDimens.BorderThickness,
+                            color = Color(0xFF1A1A1A),
+                            shape = RoundedCornerShape(AppDimens.CornerRadiusSmall)
+                        )
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = tab.label,
+                            text = tab.label.uppercase(),
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) {
-                                MaterialTheme.colorScheme.onPrimary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            }
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF1A1A1A)
                         )
                         if (count > 0) {
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = count.toString(),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isSelected) {
-                                    MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                }
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = count.toString(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color.White
+                                )
+                            }
                         }
                     }
                 }
@@ -309,24 +314,22 @@ private fun TaskList(
         contentPadding = PaddingValues(
             start = AppDimens.ScreenHorizontalPadding,
             end = AppDimens.ScreenHorizontalPadding,
-            top = 4.dp,
-            bottom = 80.dp
+            top = 8.dp,
+            bottom = 100.dp
         ),
-        verticalArrangement = Arrangement.spacedBy(AppDimens.CardSpacing)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         groupedTasks.forEach { (dateLabel, tasks) ->
-            // Date group header
             item(key = "header_$dateLabel") {
                 Text(
-                    text = dateLabel,
+                    text = dateLabel.uppercase(),
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF1A1A1A),
                     modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
                 )
             }
 
-            // Tasks in this group
             items(
                 items = tasks,
                 key = { it.id }
@@ -351,28 +354,28 @@ private fun EmptyTasksState(tab: TaskTab, hasSearch: Boolean) {
             val (emoji, title, subtitle) = when {
                 hasSearch -> Triple(
                     "🔍",
-                    "No results found",
-                    "Try a different search term."
+                    "NO RESULTS FOUND",
+                    "TRY A DIFFERENT SEARCH TERM."
                 )
                 tab == TaskTab.TODAY -> Triple(
                     "🎉",
-                    "All clear for today!",
-                    "No tasks due today."
+                    "ALL CLEAR FOR TODAY!",
+                    "NO TASKS DUE TODAY."
                 )
                 tab == TaskTab.OVERDUE -> Triple(
                     "✅",
-                    "Nothing overdue",
-                    "You're all caught up!"
+                    "NOTHING OVERDUE",
+                    "YOU'RE ALL CAUGHT UP!"
                 )
                 tab == TaskTab.UPCOMING -> Triple(
                     "📅",
-                    "No upcoming tasks",
-                    "Add a task to get started."
+                    "NO UPCOMING TASKS",
+                    "ADD A TASK TO GET STARTED."
                 )
                 else -> Triple(
                     "📝",
-                    "No tasks yet",
-                    "Tap + to create your first task."
+                    "NO TASKS YET",
+                    "TAP + TO CREATE YOUR FIRST TASK."
                 )
             }
 
@@ -381,26 +384,20 @@ private fun EmptyTasksState(tab: TaskTab, hasSearch: Boolean) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF1A1A1A)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1A1A1A).copy(alpha = 0.7f)
             )
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────
-
-/**
- * Groups tasks by date label for section headers.
- */
 private fun groupTasksByDate(tasks: List<TaskUiModel>): Map<String, List<TaskUiModel>> {
     val today = LocalDate.now()
     val tomorrow = today.plusDays(1)

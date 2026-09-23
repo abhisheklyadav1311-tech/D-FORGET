@@ -1,5 +1,6 @@
 package com.aitaskorganizer.app.ui.completed
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -14,24 +15,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.aitaskorganizer.app.ui.theme.StatusCompleted
+import com.aitaskorganizer.app.ui.theme.SuccessGreen
 
-/**
- * Completed tasks screen.
- *
- * Phase 10 will implement:
- * - Completed task list
- * - Completion date grouping
- * - Undo completion
- * - Delete completed tasks
- */
 @Composable
 fun CompletedScreen(
     onNavigateToTaskDetail: (Long) -> Unit = {}
 ) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -39,19 +35,21 @@ fun CompletedScreen(
             imageVector = Icons.Outlined.CheckCircleOutline,
             contentDescription = null,
             modifier = Modifier.size(48.dp),
-            tint = StatusCompleted
+            tint = SuccessGreen
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Completed",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground
+            text = "COMPLETED",
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.ExtraBold,
+            color = Color(0xFF1A1A1A)
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Coming in Phase 10",
+            text = "COMING IN PHASE 10",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1A1A1A)
         )
     }
 }

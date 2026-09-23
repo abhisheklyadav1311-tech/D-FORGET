@@ -6,6 +6,9 @@ coreKtx = "1.15.0"
 lifecycleRuntime = "2.8.7"
 activityCompose = "1.9.3"
 navigationCompose = "2.8.5"
+retrofit = "2.9.0"
+okhttp = "4.12.0"
+room = "2.6.1"
 junit = "4.13.2"
 junitExt = "1.2.1"
 espressoCore = "3.6.1"
@@ -29,6 +32,15 @@ compose-material-icons = { group = "androidx.compose.material", name = "material
 
 navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+retrofit-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
+
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 junit-ext = { group = "androidx.test.ext", name = "junit", version.ref = "junitExt" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -37,3 +49,4 @@ espresso-core = { group = "androidx.test.espresso", name = "espresso-core", vers
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }

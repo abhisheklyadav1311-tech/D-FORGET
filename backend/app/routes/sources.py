@@ -8,6 +8,8 @@ from typing import List, Optional
 from app.database import models
 from app.database.connection import get_db
 from app.schemas import source as schemas
+from app.services.pdf_service import PDFService
+from app.services.ocr_service import OCRService
 
 router = APIRouter(
     prefix="/sources",
@@ -28,7 +30,7 @@ def create_source(
 
     if file:
         # Validate file type if needed
-        ext = os.path.splitext(file.filename)[1]
+        ext = os.path.splitext(file.filename)[1].lower()
         unique_filename = f"{uuid.uuid4()}{ext}"
         file_path = os.path.join(UPLOAD_DIR, unique_filename)
 
@@ -36,6 +38,21 @@ def create_source(
             shutil.copyfileobj(file.file, buffer)
 
         filename = unique_filename
+
+        # Process file to extract text based on type
+        if type == "pdf" or ext == ".pdf":
+            extracted = PDFService.extract_text(file_path)
+            if extracted:
+                original_text = extracted
+            else:
+                # Fallback to OCR if PDF has no text (likely images)
+                # In a real app, we might convert PDF pages to images first.
+                # For MVP, we'll assume the user might upload an image directly if OCR is needed.
+                pass
+        elif type in ["image", "screenshot"] or ext in [".jpg", ".jpeg", ".png"]:
+            extracted = OCRService.extract_text(file_path)
+            if extracted:
+                original_text = extracted
 
     db_source = models.Source(
         type=type,

@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kotlin.kapt)
 }
 
 android {
@@ -64,6 +65,17 @@ dependencies {
 
     // Navigation
     implementation(libs.navigation.compose)
+
+    // Networking
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.gson)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
+
+    // Room
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    kapt(libs.room.compiler)
 
     // Testing
     testImplementation(libs.junit)
